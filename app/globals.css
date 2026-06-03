@@ -1,26 +1,582 @@
-@import "tailwindcss";
+/* ========================================
+   ECHO FRONTEND — GLOBAL STYLESHEET
+   Single source of truth for all styling.
+   ======================================== */
 
+/* ========================================
+   1. DESIGN TOKENS
+   ======================================== */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  /* Colors — Text */
+  --color-text-primary:   #111827;
+  --color-text-secondary: #374151;
+  --color-text-muted:     #4b5563;
+  --color-text-accent:    #2563eb;
+  --color-text-accent-hover:   #1d4ed8;
+  --color-text-accent-strong:  #1e40af;
+  --color-text-on-dark:       #ffffff;
+  --color-text-success:   #16a34a;
+  --color-text-error:     #dc2626;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Colors — Background */
+  --color-bg-primary:     #ffffff;
+  --color-bg-secondary:   #f9fafb;
+  --color-bg-sidebar:     #0f172a;
+  --color-bg-error:       #fef2f2;
+  --color-bg-success:     #f0fdf4;
+  --color-bg-accent:      #eff6ff;
+  --color-bg-accent-hover: #dbeafe;
+  --color-bg-zinc:        #fafafa;
+
+  /* Colors — Border */
+  --color-border:         #d1d5db;
+  --color-border-section: #e5e7eb;
+  --color-border-accent:  #bfdbfe;
+  --color-border-error:   #fecaca;
+  --color-border-success: #bbf7d0;
+
+  /* Colors — Interactive states */
+  --color-ring-focus:     #3b82f6;
+
+  /* Typography */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  --font-size-xs:   0.75rem;
+  --font-size-sm:   0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg:   1.125rem;
+  --font-size-xl:   1.25rem;
+  --font-size-2xl:  1.5rem;
+  --font-size-3xl:  1.875rem;
+
+  --font-weight-normal:   400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  /* Spacing (4 px scale) */
+  --spacing-1:  0.25rem;
+  --spacing-2:  0.5rem;
+  --spacing-3:  0.75rem;
+  --spacing-4:  1rem;
+  --spacing-5:  1.25rem;
+  --spacing-6:  1.5rem;
+  --spacing-8:  2rem;
+  --spacing-12: 3rem;
+  --spacing-16: 4rem;
+  --spacing-32: 8rem;
+
+  /* Border radii */
+  --radius-md:   0.5rem;
+  --radius-lg:   0.75rem;
+  --radius-xl:   1rem;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+
+  /* Layout */
+  --content-max-width: 768px;
+  --sidebar-width: 16rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ========================================
+   2. BASE ELEMENTS
+   ======================================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+/* ========================================
+   3. SHARED COMPONENT CLASSES
+   ======================================== */
+
+/* Focus ring — apply to any interactive element */
+.focus-ring:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-ring-focus);
+}
+
+/* Buttons */
+.btn {
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-lg);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-base);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-primary {
+  background: var(--color-text-accent);
+  color: var(--color-text-on-dark);
+}
+.btn-primary:hover {
+  background: var(--color-text-accent-hover);
+}
+
+.btn-success {
+  background: var(--color-text-success);
+  color: var(--color-text-on-dark);
+}
+.btn-success:hover {
+  background: #15803d;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  padding: var(--spacing-2) var(--spacing-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  outline: none;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  box-shadow: 0 0 0 2px var(--color-ring-focus);
+  border-color: var(--color-text-accent);
+}
+
+.form-label {
+  display: block;
+  margin-bottom: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.error-box {
+  margin-top: var(--spacing-6);
+  padding: var(--spacing-4);
+  background: var(--color-bg-error);
+  color: var(--color-text-error);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-error);
+}
+
+/* ========================================
+   4. LAYOUT
+   ======================================== */
+.teacher-layout {
+  display: flex;
+  height: 100vh;
+  background: var(--color-bg-secondary);
+}
+
+.teacher-layout__sidebar {
+  width: var(--sidebar-width);
+  background: var(--color-bg-sidebar);
+  color: var(--color-text-on-dark);
+  padding: var(--spacing-6);
+  flex-shrink: 0;
+}
+
+.sidebar__heading {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-8);
+}
+
+.sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.teacher-layout__sidebar-link {
+  color: var(--color-text-on-dark);
+  transition: color 0.15s;
+}
+.teacher-layout__sidebar-link:hover {
+  color: #60a5fa;
+}
+
+.teacher-layout__main {
+  flex: 1;
+  padding: var(--spacing-8);
+  overflow-y: auto;
+}
+
+/* ========================================
+   5. TEACHER DASHBOARD PAGE  (/teacher)
+   ======================================== */
+.teacher-page {
+  padding: var(--spacing-8);
+}
+
+.teacher-page__heading {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+/* ========================================
+   6. CREATE-AUDIO PAGE  (/teacher/tests/createAudio)
+   ======================================== */
+.create-audio__page {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  background: var(--color-bg-primary);
+  padding: var(--spacing-8);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border-section);
+}
+
+.create-audio__heading {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-6);
+}
+
+.create-audio__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+.create-audio__radio-group {
+  display: flex;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+}
+
+.create-audio__radio-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+}
+
+.create-audio__radio-input {
+  accent-color: var(--color-text-accent);
+}
+
+/* Submit button (full-width, blue) */
+.create-audio__btn-submit {
+  width: 100%;
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-text-accent);
+  color: var(--color-text-on-dark);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-base);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.create-audio__btn-submit:hover {
+  background: var(--color-text-accent-hover);
+}
+.create-audio__btn-submit--disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
+}
+.create-audio__btn-submit--disabled:hover {
+  background: #93c5fd;
+}
+
+/* Result section */
+.create-audio__result {
+  margin-top: var(--spacing-8);
+  padding: var(--spacing-6);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-section);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.create-audio__result-heading {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.create-audio__ai-text {
+  padding: var(--spacing-3);
+  background: var(--color-bg-accent);
+  border: 1px solid var(--color-border-accent);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.ai-text__label {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-accent-strong);
+}
+
+.ai-text__content {
+  margin-top: var(--spacing-1);
+}
+
+.create-audio__audio-player {
+  width: 100%;
+}
+
+.create-audio__file-details {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.file-details__label {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.create-audio__file-details__url {
+  color: var(--color-text-accent);
+  word-break: break-all;
+}
+.create-audio__file-details__url:hover {
+  text-decoration: underline;
+}
+
+.create-audio__actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--spacing-2);
+}
+
+.btn-save {
+  padding: var(--spacing-2) var(--spacing-4);
+  background: var(--color-text-success);
+  color: var(--color-text-on-dark);
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-base);
+  transition: background-color 0.15s;
+}
+.btn-save:hover {
+  background: #15803d;
+}
+
+/* ========================================
+   7. HOME / LANDING PAGE  (/)
+   ======================================== */
+.home-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-zinc);
+  font-family: var(--font-sans);
+}
+
+.home-page__main {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  max-width: var(--content-max-width);
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-32) var(--spacing-16);
+  background: var(--color-bg-primary);
+}
+
+.home-page__logo {
+  margin-bottom: var(--spacing-8);
+}
+
+.home-page__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-6);
+  text-align: center;
+}
+
+.home-page__heading {
+  max-width: 20rem;
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+  color: #000;
+}
+
+.home-page__description {
+  max-width: 28rem;
+  font-size: var(--font-size-lg);
+  line-height: 1.75;
+  color: #52525b;
+}
+
+.home-page__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+}
+
+.home-page__btn-primary {
+  display: flex;
+  height: 3rem;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  border-radius: var(--radius-full);
+  background: #171717;
+  color: #ffffff;
+  padding: 0 var(--spacing-5);
+  transition: background-color 0.15s;
+  text-decoration: none;
+}
+.home-page__btn-primary:hover {
+  background: #383838;
+}
+
+.home-page__btn-secondary {
+  display: flex;
+  height: 3rem;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(0,0,0,0.08);
+  padding: 0 var(--spacing-5);
+  transition: border-color 0.15s, background-color 0.15s;
+  text-decoration: none;
+  color: inherit;
+}
+.home-page__btn-secondary:hover {
+  border-color: transparent;
+  background: rgba(0,0,0,0.04);
+}
+
+/* ========================================
+   8. RESPONSIVE  (≥ 640 px)
+   ======================================== */
+@media (min-width: 640px) {
+  .home-page__content {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .home-page__actions {
+    flex-direction: row;
+  }
+
+  .home-page__btn-primary,
+  .home-page__btn-secondary {
+    width: 158px;
+  }
+}
+
+/* ========================================
+   9. DARK MODE
+   ======================================== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-text-primary:   #f3f4f6;
+    --color-text-secondary: #d1d5db;
+    --color-text-muted:     #9ca3af;
+    --color-bg-primary:     #111827;
+    --color-bg-secondary:   #1f2937;
+    --color-bg-zinc:        #000000;
+    --color-border:         #4b5563;
+    --color-border-section: #374151;
+  }
+
+  .home-page {
+    background: #000;
+  }
+
+  .home-page__main {
+    background: #000;
+  }
+
+  .home-page__heading {
+    color: #fafafa;
+  }
+
+  .home-page__description {
+    color: #a1a1aa;
+  }
+
+  .home-page__logo {
+    filter: invert(1);
+  }
+
+  .home-page__btn-primary {
+    background: #ffffff;
+    color: #0a0a0a;
+  }
+  .home-page__btn-primary:hover {
+    background: #ccc;
+  }
+
+  .home-page__btn-secondary {
+    border-color: rgba(255,255,255,0.145);
+    color: #fafafa;
+  }
+  .home-page__btn-secondary:hover {
+    background: #1a1a1a;
+  }
+}
+
+/* Allow manual dark mode toggle via data attribute */
+[data-theme="dark"] {
+  --color-text-primary:   #f3f4f6;
+  --color-text-secondary: #d1d5db;
+  --color-text-muted:     #9ca3af;
+  --color-bg-primary:     #111827;
+  --color-bg-secondary:   #1f2937;
+  --color-bg-zinc:        #000000;
+  --color-border:         #4b5563;
+  --color-border-section: #374151;
 }

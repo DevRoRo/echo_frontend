@@ -4,18 +4,15 @@ export default function TeacherLayout({
     children: React.ReactNode
 }) {
     return (
-        <div className="flex h-screen bg-gray-50">
-            {/* Sidebar Navigation for Teachers */}
-            <aside className="w-64 bg-slate-900 text-white p-6">
-                <h2 className="text-2xl font-bold mb-8">Echo Admin</h2>
-                <nav className="flex flex-col space-y-4">
-                    <a href="/teacher" className="hover:text-blue-400">Dashboard</a>
-                    <a href="/teacher/tests/new" className="hover:text-blue-400">Create Test</a>
+        <div className="teacher-layout">
+            <aside className="teacher-layout__sidebar">
+                <h2 className="sidebar__heading">Echo Admin</h2>
+                <nav className="sidebar__nav">
+                    <a href="/teacher" className="teacher-layout__sidebar-link">Dashboard</a>
+                    <a href="/teacher/tests/new" className="teacher-layout__sidebar-link">Create Test</a>
                 </nav>
             </aside>
-
-            {/* Main Content Area */}
-            <main className="flex-1 p-8 overflow-y-auto">
+            <main className="teacher-layout__main">
                 {children}
             </main>
         </div>

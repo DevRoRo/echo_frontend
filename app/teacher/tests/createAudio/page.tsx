@@ -3,21 +3,27 @@
 import { useState } from "react";
 
 export default function CreateAudioPage() {
-    // 1. Updated State to match backend requirements
     const [prompt, setPrompt] = useState("");
-    const [voiceName, setVoiceName] = useState("en-US-Journey-F"); // Default voice
+    const [voiceName, setVoiceName] = useState("en-US-Journey-F");
     const [conversationContext, setConversationContext] = useState("");
 
+    const [wordCount, setWordCount] = useState(80);
     const [generationMode, setGenerationMode] = useState<"direct" | "ai">("ai");
     const [isLoading, setIsLoading] = useState(false);
-    const [audioUrl, setAudioUrl] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+
+    const [audioFile, setAudioFile] = useState<{
+        url: string;
+        filename: string;
+        filePath: string;
+        aiText?: string;
+    } | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         setError(null);
-        setAudioUrl(null);
+        setAudioFile(null);
 
         const endpoint =
             generationMode === "direct" ? "/generate-audio/" : "/ask-professor/";
@@ -30,16 +36,15 @@ export default function CreateAudioPage() {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                // 2. The Payload now perfectly matches your Pydantic BaseModel
                 body: JSON.stringify({
                     prompt: prompt,
                     voice_name: voiceName,
-                    conversation_context: conversationContext
+                    conversation_context: conversationContext,
+                    ...(generationMode === "ai" && { word_count: wordCount }),
                 }),
             });
 
             if (!response.ok) {
-                // If we get a 422, we can try to parse the detail for better debugging
                 if (response.status === 422) {
                     const errorData = await response.json();
                     console.error("Erro 422 (Validação):", errorData);
@@ -50,61 +55,67 @@ export default function CreateAudioPage() {
 
             const data = await response.json();
 
-            if (data.audio_url) {
-                setAudioUrl(data.audio_url);
-            } else {
-                throw new Error("URL do áudio não encontrada na resposta.");
+            if (!data.file_path) {
+                throw new Error("Caminho do áudio não encontrado na resposta.");
             }
-        } catch (err: any) {
-            setError(err.message);
+
+            const filePath: string = data.file_path;
+            const filename = filePath.split("/").pop() || filePath;
+
+            setAudioFile({
+                url: `${baseUrl}/${filePath}`,
+                filename,
+                filePath,
+                aiText: data.ai_text,
+            });
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Erro desconhecido");
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <div className="max-w-3xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-gray-100">
-            <h1 className="text-2xl font-bold text-gray-800 mb-6">
+        <div className="create-audio__page">
+            <h1 className="create-audio__heading">
                 Criar Novo Áudio de Teste
             </h1>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Mode Selector */}
-                <div className="flex space-x-4 mb-4">
-                    <label className="flex items-center space-x-2 cursor-pointer">
+            <form onSubmit={handleSubmit} className="create-audio__form">
+                <div className="create-audio__radio-group">
+                    <label className="create-audio__radio-label">
                         <input
                             type="radio"
                             name="mode"
                             value="ai"
                             checked={generationMode === "ai"}
                             onChange={() => setGenerationMode("ai")}
-                            className="text-blue-600 focus:ring-blue-500"
+                            className="create-audio__radio-input"
                         />
-                        <span className="text-gray-700">Contexto com IA (/ask-professor/)</span>
+                        <span>Contexto com IA (/ask-professor/)</span>
                     </label>
-                    <label className="flex items-center space-x-2 cursor-pointer">
+                    <label className="create-audio__radio-label">
                         <input
                             type="radio"
                             name="mode"
                             value="direct"
                             checked={generationMode === "direct"}
                             onChange={() => setGenerationMode("direct")}
-                            className="text-blue-600 focus:ring-blue-500"
+                            className="create-audio__radio-input"
                         />
-                        <span className="text-gray-700">Texto Direto (/generate-audio/)</span>
+                        <span>Texto Direto (/generate-audio/)</span>
                     </label>
                 </div>
 
-                {/* 3. New Input: Voice Selection */}
                 <div>
-                    <label htmlFor="voiceName" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="voiceName" className="form-label">
                         Voz do Áudio
                     </label>
                     <select
                         id="voiceName"
                         value={voiceName}
                         onChange={(e) => setVoiceName(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="form-select"
                     >
                         <option value="Aoede">Aoede (Feminina)</option>
                         <option value="Kore">Kore (Feminina)</option>
@@ -114,9 +125,8 @@ export default function CreateAudioPage() {
                     </select>
                 </div>
 
-                {/* 4. New Input: Conversation Context */}
                 <div>
-                    <label htmlFor="context" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="context" className="form-label">
                         Contexto da Conversação (Background/Cenário)
                     </label>
                     <input
@@ -126,13 +136,29 @@ export default function CreateAudioPage() {
                         onChange={(e) => setConversationContext(e.target.value)}
                         required
                         placeholder="Ex: Em um restaurante, Nível B1, tom formal..."
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="form-input"
                     />
                 </div>
 
-                {/* Original Text Input (Prompt) */}
+                {generationMode === "ai" && (
+                    <div>
+                        <label htmlFor="wordCount" className="form-label">
+                            Número de palavras para a resposta
+                        </label>
+                        <input
+                            type="number"
+                            id="wordCount"
+                            min={1}
+                            max={500}
+                            value={wordCount}
+                            onChange={(e) => setWordCount(Math.max(1, parseInt(e.target.value) || 1))}
+                            className="form-input"
+                        />
+                    </div>
+                )}
+
                 <div>
-                    <label htmlFor="prompt" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="prompt" className="form-label">
                         {generationMode === "ai"
                             ? "Instruções específicas para a IA (O que os personagens devem falar)"
                             : "Texto exato para leitura"}
@@ -143,40 +169,67 @@ export default function CreateAudioPage() {
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
                         required
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="form-textarea"
                         placeholder="Digite aqui..."
                     />
                 </div>
 
-                {/* Submit Button */}
                 <button
                     type="submit"
-                    disabled={isLoading || !prompt.trim() || !conversationContext.trim()}
-                    className={`w-full py-3 px-4 rounded-lg text-white font-medium transition-colors ${isLoading || !prompt.trim() || !conversationContext.trim()
-                            ? "bg-blue-400 cursor-not-allowed"
-                            : "bg-blue-600 hover:bg-blue-700"
-                        }`}
+                    disabled={isLoading || !prompt.trim() || !conversationContext.trim() || (generationMode === "ai" && wordCount < 1)}
+                    className={
+                        `create-audio__btn-submit${
+                            isLoading || !prompt.trim() || !conversationContext.trim() || (generationMode === "ai" && wordCount < 1)
+                                ? " create-audio__btn-submit--disabled"
+                                : ""
+                        }`
+                    }
                 >
                     {isLoading ? "Processando..." : "Gerar Áudio"}
                 </button>
             </form>
 
-            {/* Error Message */}
             {error && (
-                <div className="mt-6 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
+                <div className="error-box">
                     {error}
                 </div>
             )}
 
-            {/* Result Player */}
-            {audioUrl && (
-                <div className="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
-                    <h2 className="text-lg font-semibold text-gray-800 mb-4">Áudio Gerado:</h2>
-                    <audio controls className="w-full" src={audioUrl}>
+            {audioFile && (
+                <div className="create-audio__result">
+                    <h2 className="create-audio__result-heading">Áudio Gerado</h2>
+
+                    {audioFile.aiText && (
+                        <div className="create-audio__ai-text">
+                            <span className="ai-text__label">Texto gerado pela IA:</span>
+                            <p className="ai-text__content">{audioFile.aiText}</p>
+                        </div>
+                    )}
+
+                    <audio controls className="create-audio__audio-player" src={audioFile.url}>
                         Seu navegador não suporta o elemento de áudio.
                     </audio>
-                    <div className="mt-4 flex justify-end">
-                        <button className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
+
+                    <div className="create-audio__file-details">
+                        <div>
+                            <span className="file-details__label">Nome do arquivo:</span>{" "}
+                            {audioFile.filename}
+                        </div>
+                        <div>
+                            <span className="file-details__label">URL:</span>{" "}
+                            <a
+                                href={audioFile.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="create-audio__file-details__url"
+                            >
+                                {audioFile.url}
+                            </a>
+                        </div>
+                    </div>
+
+                    <div className="create-audio__actions">
+                        <button className="btn-save">
                             Salvar Teste no Banco de Dados
                         </button>
                     </div>
