@@ -343,7 +343,7 @@ img {
   border: 1px solid var(--color-border-accent);
   border-radius: var(--radius-lg);
   font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+  color: var(--color-text-accent);
 }
 
 .ai-text__label {
@@ -401,8 +401,137 @@ img {
   background: #15803d;
 }
 
+.create-audio__save-success {
+  padding: var(--spacing-3);
+  background: var(--color-bg-success);
+  color: var(--color-text-success);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-success);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
 /* ========================================
-   7. HOME / LANDING PAGE  (/)
+   7. AUDIO-RECORDS PAGE  (/teacher/tests/audioRecords)
+   ======================================== */
+.audio-records__page {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  background: var(--color-bg-primary);
+  padding: var(--spacing-8);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border-section);
+}
+
+.audio-records__heading {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-6);
+}
+
+.audio-records__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-4);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-section);
+}
+
+.audio-records__form-row {
+  display: flex;
+  gap: var(--spacing-4);
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.audio-records__form-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.audio-records__btn-search {
+  padding: var(--spacing-2) var(--spacing-6);
+  background: var(--color-text-accent);
+  color: var(--color-text-on-dark);
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-base);
+  transition: background-color 0.15s;
+  white-space: nowrap;
+}
+.audio-records__btn-search:hover {
+  background: var(--color-text-accent-hover);
+}
+.audio-records__btn-search:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
+}
+
+.audio-records__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.audio-records__table-header {
+  text-align: left;
+  padding: var(--spacing-3) var(--spacing-2);
+  border-bottom: 2px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.audio-records__table-row {
+  border-bottom: 1px solid var(--color-border-section);
+}
+
+.audio-records__table-row:hover {
+  background: var(--color-bg-accent);
+}
+
+.audio-records__table-cell {
+  padding: var(--spacing-3) var(--spacing-2);
+  color: var(--color-text-primary);
+  vertical-align: top;
+}
+
+.audio-records__table-cell--muted {
+  color: var(--color-text-muted);
+}
+
+.audio-records__table-cell--id {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.audio-records__empty {
+  padding: var(--spacing-8);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.audio-records__loading {
+  padding: var(--spacing-8);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* ========================================
+   9. HOME / LANDING PAGE  (/)
    ======================================== */
 .home-page {
   display: flex;
@@ -499,7 +628,7 @@ img {
 }
 
 /* ========================================
-   8. RESPONSIVE  (≥ 640 px)
+   10. RESPONSIVE  (≥ 640 px)
    ======================================== */
 @media (min-width: 640px) {
   .home-page__content {
@@ -518,7 +647,7 @@ img {
 }
 
 /* ========================================
-   9. DARK MODE
+   11. DARK MODE
    ======================================== */
 @media (prefers-color-scheme: dark) {
   :root {

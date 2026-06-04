@@ -469,3 +469,138 @@ The overall effort is achievable (this is a 1–2 day refactor for a junior deve
 | `app/page.tsx` | Replaced all Tailwind classes with `.home-page__*`, responsive, and dark mode classes |
 | `package.json` | Removed `tailwindcss` and `@tailwindcss/postcss` devDependencies |
 | `postcss.config.mjs` | Emptied (no plugins needed) |
+
+---
+
+# Next Steps: Audio Records API Integration
+
+## Goal
+
+Integrate the two `/audio-records/` backend endpoints (GET + POST) into the frontend to persist and browse generated audio data.
+
+---
+
+## Backend API Reference (Echo API)
+
+### POST `/audio-records/` — Save an audio record
+
+| Field | Type | Required | Source in frontend |
+|---|---|---|---|
+| `file_path` | `str` | yes | `audioFile.filePath` (from generate-audio or ask-professor response) |
+| `transcription` | `str` | yes | `audioFile.aiText` (ask-professor) or `prompt` (direct mode) |
+| `conversation_context` | `str\|null` | no | `conversationContext` form state |
+| `voice_name` | `str` | no (default: `"default"`) | `voiceName` form state |
+
+Returns `AudioRecordResponse` with `id`, `file_path`, `transcription`, `conversation_context`, `voice_name`, `created_at`.
+
+### GET `/audio-records/` — List audio records
+
+Optional query parameters: `transcription` (ILIKE), `conversation_context` (ILIKE), `voice_name` (exact).
+
+Returns `Array<AudioRecordResponse>`.
+
+---
+
+## Proposed Changes
+
+### 1. `app/teacher/tests/createAudio/page.tsx`
+
+Add save handler to the existing **btn-save** button (line 233, currently no `onClick`):
+
+- Add state: `isSaving`, `saveError`, `saveSuccess`
+- New `handleSave()` async function:
+  - POSTs to `{baseUrl}/audio-records/` with body:
+    ```json
+    { "file_path": audioFile.filePath, "transcription": audioFile.aiText || prompt, "conversation_context": conversationContext, "voice_name": voiceName }
+    ```
+  - Shows `saveSuccess` / `saveError` feedback in the UI
+- Wire `onClick={handleSave}` on `<button className="btn-save">`
+
+### 2. Create `app/teacher/tests/audioRecords/page.tsx`
+
+New page at route `/teacher/tests/audioRecords`:
+
+- Filter form with 3 optional fields: `transcription`, `conversation_context`, `voice_name`
+- Submit calls `GET /audio-records/?transcription=...&conversation_context=...&voice_name=...`
+- Result rendered in a table: columns `id`, `file_path`, `transcription` (first 60 chars), `conversation_context` (first 60 chars), `voice_name`, `created_at`
+- States: `records` (array), `isLoading`, `error`, `hasSearched`
+
+### 3. `app/globals.css`
+
+Add a new section (inserted after the existing create-audio section) with classes prefixed `audio-records__`:
+
+| Class | Purpose |
+|---|---|
+| `.audio-records__page` | Wrapper, max-width, background, padding, border-radius |
+| `.audio-records__heading` | Section title |
+| `.audio-records__form` | Flex column, gap |
+| `.audio-records__form-row` | Flex row for inline filters |
+| `.audio-records__table` | Full-width grid/table |
+| `.audio-records__table-header` | `<th>` equivalent |
+| `.audio-records__table-row` | `<tr>` equivalent |
+| `.audio-records__table-cell` | `<td>` equivalent |
+| `.audio-records__btn-search` | Submit button (reuse `.btn` + `.btn-primary`) |
+
+### 4. `app/teacher/layout.tsx`
+
+Add a new sidebar link:
+```tsx
+<a href="/teacher/tests/audioRecords" className="teacher-layout__sidebar-link">
+    Audio Records
+</a>
+```
+
+---
+
+## Order of Implementation
+
+| Step | What | Files Touched |
+|---|---|---|
+| 1 | Add save handler to btn-save | `createAudio/page.tsx` |
+| 2 | Create audioRecords page | `audioRecords/page.tsx` (new file) |
+| 3 | Add audio-records CSS | `globals.css` |
+| 4 | Add sidebar link | `teacher/layout.tsx` |
+
+---
+
+## Verification
+
+- `npm run build` — must succeed with zero errors
+- `npm run lint` — must succeed with zero errors
+- btn-save on `/teacher/tests/createAudio` → POSTs to `/audio-records/` on click, shows success/error feedback
+- `/teacher/tests/audioRecords` → filter form sends GET request, table renders results
+
+---
+
+# Error Handling Fix: Forward Gemini error details to the UI
+
+## Problem
+
+When the Gemini API returns an error (quota exceeded, auth failure, timeout, etc.), the backend wraps it in HTTP 500 and sends the exception string in the response body:
+
+```json
+{"detail": "429 Resource has been exhausted (e.g. check quota)."}
+```
+
+The frontend's `response.text` call is a **Promise** — it was never `await`ed, so the user always saw the generic message `"Falha ao gerar o áudio. Verifique a conexão com a API.`[object Promise]"` instead of the actual error detail.
+
+## Fix
+
+Replace the broken non-422 branch in both **`handleSubmit`** and **`handleSave`** to properly read the response body and extract `detail`:
+
+```ts
+const errorBody = await response.json().catch(() => null);
+const detail = errorBody?.detail || await response.text().catch(() => "");
+throw new Error(detail || "Falha ao gerar o áudio. Verifique a conexão com a API.");
+```
+
+This also handles:
+- **Network errors** — `fetch` throws `TypeError` (e.g. backend down), caught by the outer `catch`, displayed as `"Erro de rede..."`.
+- **Non-JSON responses** — falls back to raw text, then to the generic fallback.
+- **Empty detail** — falls through to the generic message.
+
+## Files changed
+
+| File | Lines changed |
+|---|---|
+| `app/teacher/tests/createAudio/page.tsx` | 3 lines in `handleSubmit`, 3 lines in `handleSave` |

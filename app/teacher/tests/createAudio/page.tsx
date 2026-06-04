@@ -4,7 +4,7 @@ import { useState } from "react";
 
 export default function CreateAudioPage() {
     const [prompt, setPrompt] = useState("");
-    const [voiceName, setVoiceName] = useState("en-US-Journey-F");
+    const [voiceName, setVoiceName] = useState("Aoede");
     const [conversationContext, setConversationContext] = useState("");
 
     const [wordCount, setWordCount] = useState(80);
@@ -18,6 +18,9 @@ export default function CreateAudioPage() {
         filePath: string;
         aiText?: string;
     } | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveError, setSaveError] = useState<string | null>(null);
+    const [saveSuccess, setSaveSuccess] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -50,7 +53,9 @@ export default function CreateAudioPage() {
                     console.error("Erro 422 (Validação):", errorData);
                     throw new Error("Erro de validação: Verifique se todos os campos foram preenchidos corretamente.");
                 }
-                throw new Error("Falha ao gerar o áudio. Verifique a conexão com a API.");
+                const errorBody = await response.json().catch(() => null);
+                const detail = errorBody?.detail || await response.text().catch(() => "");
+                throw new Error(detail || "Falha ao gerar o áudio. Verifique a conexão com a API.");
             }
 
             const data = await response.json();
@@ -72,6 +77,45 @@ export default function CreateAudioPage() {
             setError(err instanceof Error ? err.message : "Erro desconhecido");
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleSave = async () => {
+        if (!audioFile) return;
+        setIsSaving(true);
+        setSaveError(null);
+        setSaveSuccess(false);
+
+        try {
+            const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+            const response = await fetch(`${baseUrl}/audio-records/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    file_path: audioFile.filePath,
+                    transcription: audioFile.aiText || prompt,
+                    conversation_context: conversationContext,
+                    voice_name: voiceName,
+                }),
+            });
+
+            if (!response.ok) {
+                if (response.status === 422) {
+                    const errorData = await response.json();
+                    console.error("Erro 422 (Validação):", errorData);
+                    throw new Error("Erro de validação: Verifique os dados do registro.");
+                }
+                const errorBody = await response.json().catch(() => null);
+                const detail = errorBody?.detail || await response.text().catch(() => "");
+                throw new Error(detail || "Falha ao salvar o registro. Verifique a conexão com a API.");
+            }
+
+            setSaveSuccess(true);
+        } catch (err: unknown) {
+            setSaveError(err instanceof Error ? err.message : "Erro desconhecido");
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -229,10 +273,22 @@ export default function CreateAudioPage() {
                     </div>
 
                     <div className="create-audio__actions">
-                        <button className="btn-save">
-                            Salvar Teste no Banco de Dados
+                        <button className="btn-save" onClick={handleSave} disabled={isSaving}>
+                            {isSaving ? "Salvando..." : "Salvar Teste no Banco de Dados"}
                         </button>
                     </div>
+
+                    {saveSuccess && (
+                        <div className="create-audio__save-success">
+                            Registro salvo com sucesso!
+                        </div>
+                    )}
+
+                    {saveError && (
+                        <div className="error-box">
+                            {saveError}
+                        </div>
+                    )}
                 </div>
             )}
         </div>
