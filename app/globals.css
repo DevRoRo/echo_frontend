@@ -231,6 +231,60 @@ img {
   color: #60a5fa;
 }
 
+.sidebar__user-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  padding: var(--spacing-3) 0;
+  margin-bottom: var(--spacing-4);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar__user-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-on-dark);
+}
+
+.sidebar__course-title {
+  font-size: var(--font-size-xs);
+  color: #94a3b8;
+}
+
+.sidebar__role-badge {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: #60a5fa;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sidebar__role-badge--instructor {
+  color: #4ade80;
+}
+
+.sidebar__footer {
+  margin-top: auto;
+  padding-top: var(--spacing-4);
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar__btn-logout {
+  width: 100%;
+  padding: var(--spacing-2) var(--spacing-4);
+  background: transparent;
+  color: #94a3b8;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  transition: color 0.15s, border-color 0.15s;
+}
+.sidebar__btn-logout:hover {
+  color: var(--color-text-on-dark);
+  border-color: rgba(255,255,255,0.4);
+}
+
 .teacher-layout__main {
   flex: 1;
   padding: var(--spacing-8);
@@ -247,6 +301,32 @@ img {
 .teacher-page__heading {
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+.teacher-page__info {
+  margin-top: var(--spacing-6);
+  padding: var(--spacing-4);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-section);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.teacher-page__info-row {
+  display: flex;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-sm);
+}
+
+.teacher-page__info-label {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.teacher-page__info-value {
   color: var(--color-text-primary);
 }
 
@@ -530,8 +610,212 @@ img {
   font-size: var(--font-size-sm);
 }
 
+.audio-records__table-row--clickable {
+  cursor: pointer;
+}
+
+.audio-records__table-row--expanded {
+  background: var(--color-bg-accent);
+}
+.audio-records__table-row--expanded:hover {
+  background: var(--color-bg-accent-hover);
+}
+
+.audio-records__expand-cell {
+  padding: 0 var(--spacing-2) var(--spacing-3) var(--spacing-2);
+}
+
+.audio-records__detail-panel {
+  padding: var(--spacing-4);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-section);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.audio-records__detail-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.audio-records__detail-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.audio-records__detail-value {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  word-break: break-all;
+  line-height: 1.5;
+}
+
+.audio-records__detail-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  padding-top: var(--spacing-2);
+  flex-wrap: wrap;
+}
+
+.audio-records__audio-player {
+  flex: 1;
+  min-width: 200px;
+}
+
+.audio-records__btn-delete {
+  padding: var(--spacing-2) var(--spacing-4);
+  background: var(--color-text-error);
+  color: var(--color-text-on-dark);
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+  transition: background-color 0.15s;
+  white-space: nowrap;
+}
+.audio-records__btn-delete:hover {
+  background: #b91c1c;
+}
+.audio-records__btn-delete:disabled {
+  background: #fca5a5;
+  cursor: not-allowed;
+}
+
 /* ========================================
-   9. HOME / LANDING PAGE  (/)
+   9. STUDENT PAGES
+   ======================================== */
+.student-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--color-bg-secondary);
+}
+
+.student-layout__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-4) var(--spacing-6);
+  background: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border-section);
+}
+
+.student-layout__header-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.student-layout__course-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.student-layout__user-name {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.student-layout__btn-logout {
+  padding: var(--spacing-1) var(--spacing-3);
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  transition: color 0.15s, border-color 0.15s;
+}
+.student-layout__btn-logout:hover {
+  color: var(--color-text-primary);
+  border-color: var(--color-text-muted);
+}
+
+.student-layout__main {
+  flex: 1;
+  padding: var(--spacing-8);
+  overflow-y: auto;
+}
+
+.student-page {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  background: var(--color-bg-primary);
+  padding: var(--spacing-8);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border-section);
+}
+
+.student-page__heading {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-2);
+}
+
+.student-page__course {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--spacing-6);
+}
+
+.student-page__content {
+  padding: var(--spacing-8);
+  text-align: center;
+  color: var(--color-text-muted);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+/* ========================================
+   10. AUTH / ERROR PAGES
+   ======================================== */
+.auth-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+}
+
+.auth-error__page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--spacing-8);
+  text-align: center;
+  background: var(--color-bg-secondary);
+}
+
+.auth-error__heading {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-4);
+}
+
+.auth-error__message {
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+  max-width: 400px;
+  line-height: 1.6;
+}
+
+/* ========================================
+   11. HOME / LANDING PAGE  (/)
    ======================================== */
 .home-page {
   display: flex;
@@ -628,7 +912,7 @@ img {
 }
 
 /* ========================================
-   10. RESPONSIVE  (≥ 640 px)
+   12. RESPONSIVE  (≥ 640 px)
    ======================================== */
 @media (min-width: 640px) {
   .home-page__content {
@@ -647,7 +931,7 @@ img {
 }
 
 /* ========================================
-   11. DARK MODE
+   13. DARK MODE
    ======================================== */
 @media (prefers-color-scheme: dark) {
   :root {

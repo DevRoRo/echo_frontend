@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useLTIContext } from "@/contexts/LTIContext";
 
 export default function CreateAudioPage() {
+    const { sessionToken } = useLTIContext();
     const [prompt, setPrompt] = useState("");
     const [voiceName, setVoiceName] = useState("Aoede");
     const [conversationContext, setConversationContext] = useState("");
@@ -18,6 +20,7 @@ export default function CreateAudioPage() {
         filePath: string;
         aiText?: string;
     } | null>(null);
+    const [audioName, setAudioName] = useState("");
     const [isSaving, setIsSaving] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
     const [saveSuccess, setSaveSuccess] = useState(false);
@@ -34,11 +37,14 @@ export default function CreateAudioPage() {
         try {
             const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+            const headers: Record<string, string> = {
+                "Content-Type": "application/json",
+            };
+            if (sessionToken) headers["Authorization"] = `Bearer ${sessionToken}`;
+
             const response = await fetch(`${baseUrl}${endpoint}`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers,
                 body: JSON.stringify({
                     prompt: prompt,
                     voice_name: voiceName,
@@ -67,6 +73,9 @@ export default function CreateAudioPage() {
             const filePath: string = data.file_path;
             const filename = filePath.split("/").pop() || filePath;
 
+            const defaultName = (data.ai_text || prompt).slice(0, 60);
+            setAudioName(defaultName);
+
             setAudioFile({
                 url: `${baseUrl}/${filePath}`,
                 filename,
@@ -89,10 +98,16 @@ export default function CreateAudioPage() {
         try {
             const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+            const headers: Record<string, string> = {
+                "Content-Type": "application/json",
+            };
+            if (sessionToken) headers["Authorization"] = `Bearer ${sessionToken}`;
+
             const response = await fetch(`${baseUrl}/audio-records/`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers,
                 body: JSON.stringify({
+                    name: audioName,
                     file_path: audioFile.filePath,
                     transcription: audioFile.aiText || prompt,
                     conversation_context: conversationContext,
@@ -122,7 +137,7 @@ export default function CreateAudioPage() {
     return (
         <div className="create-audio__page">
             <h1 className="create-audio__heading">
-                Criar Novo Áudio de Teste
+                Criar Novo Áudio
             </h1>
 
             <form onSubmit={handleSubmit} className="create-audio__form">
@@ -272,9 +287,24 @@ export default function CreateAudioPage() {
                         </div>
                     </div>
 
+                    <div>
+                        <label htmlFor="audioName" className="form-label">
+                            Nome do Áudio
+                        </label>
+                        <input
+                            type="text"
+                            id="audioName"
+                            value={audioName}
+                            onChange={(e) => setAudioName(e.target.value)}
+                            required
+                            placeholder="Ex: Diálogo no Restaurante"
+                            className="form-input"
+                        />
+                    </div>
+
                     <div className="create-audio__actions">
                         <button className="btn-save" onClick={handleSave} disabled={isSaving}>
-                            {isSaving ? "Salvando..." : "Salvar Teste no Banco de Dados"}
+                            {isSaving ? "Salvando..." : "Salvar Áudio no Banco de Dados"}
                         </button>
                     </div>
 

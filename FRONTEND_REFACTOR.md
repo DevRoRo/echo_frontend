@@ -604,3 +604,258 @@ This also handles:
 | File | Lines changed |
 |---|---|
 | `app/teacher/tests/createAudio/page.tsx` | 3 lines in `handleSubmit`, 3 lines in `handleSave` |
+
+---
+
+# Name Field Fix: Add missing `name` to audio record save
+
+## Problem
+
+The backend `CreateAudioRecordRequest` requires a `name: str` field. The use case validates `if not record.name.strip()`. The frontend's `handleSave` never sent `name`, causing every save attempt to return a 422 validation error.
+
+## Fix (Approach B)
+
+### 1. New state
+
+```tsx
+const [audioName, setAudioName] = useState("");
+```
+
+### 2. Pre-fill default name when audio is generated
+
+In `handleSubmit`, after `setAudioFile(...)`, derive a default name from the available text:
+
+```tsx
+const defaultName = (data.ai_text || prompt).slice(0, 60);
+setAudioName(defaultName);
+```
+
+### 3. Name input in the result section
+
+Added after the file-details block, before the actions div:
+
+```tsx
+<div>
+    <label htmlFor="audioName" className="form-label">Nome do Áudio</label>
+    <input
+        type="text"
+        id="audioName"
+        value={audioName}
+        onChange={(e) => setAudioName(e.target.value)}
+        required
+        placeholder="Ex: Diálogo no Restaurante"
+        className="form-input"
+    />
+</div>
+```
+
+### 4. Send `name` in the save body
+
+```tsx
+body: JSON.stringify({
+    name: audioName,
+    file_path: audioFile.filePath,
+    transcription: audioFile.aiText || prompt,
+    conversation_context: conversationContext,
+    voice_name: voiceName,
+}),
+```
+
+## Files changed
+
+| File | What changed |
+|---|---|
+| `app/teacher/tests/createAudio/page.tsx` | + `audioName` state, + default name in handleSubmit, + name input in result section, + `name` in save body |
+| No CSS changes needed | Reuses existing `.form-label` + `.form-input` classes |
+
+---
+
+# Audio Records Page: Expandable rows with play & delete
+
+## Features
+
+### 1. Expandable table rows
+
+Clicking a table row toggles an expansion panel below it, showing the full record details without truncation. Only one row can be expanded at a time (accordion behavior).
+
+### 2. Audio playback
+
+Inside the expanded panel, an `<audio controls>` element points to `{baseUrl}/{record.file_path}`, allowing the teacher to listen to the audio directly.
+
+### 3. Delete audio record
+
+A red "Excluir Áudio" button inside the expanded panel:
+1. Confirms with `window.confirm("Tem certeza...")`
+2. Calls `DELETE /audio-records/{record_id}`
+3. Removes the record from local state on success
+4. Shows an error message on failure
+5. Backend also deletes the file from disk
+
+## Backend API reference
+
+| Method | Route | Request | Response |
+|--------|-------|---------|----------|
+| `DELETE` | `/audio-records/{record_id}` | path param | `AudioRecordResponse` or `404` |
+
+## Changes
+
+### `app/teacher/tests/audioRecords/page.tsx`
+
+- Add `name` to the `AudioRecord` interface (backend returns it)
+- Add state: `expandedId: number | null`, `deletingId: number | null`, `deleteError: string | null`
+- Add `toggleExpand(id)` — sets/clears `expandedId`
+- Add `handleDelete(id)` — confirms, calls DELETE, filters out from local state
+- Each record renders as a `<React.Fragment>` with:
+  - Main clickable `<tr>` (cursor pointer, highlight when expanded)
+  - Expansion `<tr>` with `<td colSpan={6}>` containing:
+    - Full transcription, file_path, conversation_context, created_at
+    - Native `<audio controls>` player
+    - Red "Excluir Áudio" button
+
+### `app/globals.css`
+
+| Class | Purpose |
+|---|---|
+| `.audio-records__table-row--clickable` | `cursor: pointer` on main rows |
+| `.audio-records__table-row--expanded` | Highlight background on active row |
+| `.audio-records__expand-cell` | Padding wrapper around the detail panel |
+| `.audio-records__detail-panel` | Inner card with border+padding |
+| `.audio-records__detail-field` | One label+value row |
+| `.audio-records__detail-label` | Bold field label |
+| `.audio-records__detail-value` | Full text, no truncation, word break |
+| `.audio-records__detail-actions` | Flex row for action buttons |
+| `.audio-records__btn-play` | Play button styling |
+| `.audio-records__btn-delete` | Red delete button |
+
+---
+
+# Phase 3 — Frontend LTI Integration
+
+## Goal
+
+Handle LTI 1.3 launches from Moodle and provide role-based UI (teacher vs. student).
+
+## Backend Context
+
+Phase 2 (Echo backend LTI) is already implemented:
+
+| Component | File |
+|---|---|
+| LTI routes | `adapters/lti_router.py` — 7 endpoints under `/lti/` |
+| Auth middleware | `adapters/lti_middleware.py` — requires Bearer JWT on all non-LTI routes |
+| JWT session token | RSA-signed, 1-hour expiry, payload: `sub`, `name`, `email`, `roles`, `course_id`, `course_title` |
+
+### Launch Flow
+
+1. User clicks Echo link in Moodle → `GET /lti/login/?iss=...` → 302 to Moodle OIDC
+2. Moodle POSTs `id_token` + `state` to `/lti/launch/`
+3. Backend validates JWT via pylti1p3, issues session JWT
+4. Backend redirects browser: `http://localhost:3000/lti/launch?session_token=<jwt>`
+5. Frontend decodes JWT payload, stores in context, redirects by role
+
+## New Files
+
+```
+echo_frontend/
+├── contexts/
+│   └── LTIContext.tsx              # LTI auth context + provider
+├── components/
+│   ├── RequireAuth.tsx              # Route guard wrapper
+│   └── RoleBasedContent.tsx         # Role-based conditional rendering
+├── app/
+│   ├── lti/
+│   │   └── launch/
+│   │       └── page.tsx             # LTI launch handler (token receiver + router)
+│   ├── student/
+│   │   ├── layout.tsx               # Student layout (auth-guarded)
+│   │   └── page.tsx                 # Student dashboard
+│   └── auth/
+│       └── error/
+│           └── page.tsx             # Auth error page
+```
+
+## Modified Files
+
+| File | Changes |
+|---|---|
+| `app/layout.tsx` | Wrap children in `<LTIContextProvider>` |
+| `app/teacher/layout.tsx` | `"use client"`, add `<RequireAuth>`, show user info in sidebar |
+| `app/teacher/page.tsx` | Show course context and role badge |
+| `app/teacher/tests/createAudio/page.tsx` | Add `Authorization: Bearer <token>` to all fetch calls |
+| `app/teacher/tests/audioRecords/page.tsx` | Add `Authorization: Bearer <token>` to all fetch calls |
+| `app/globals.css` | New CSS classes for sidebar user info, student layout, error page |
+
+## LTIContext API
+
+```typescript
+interface LTIUser {
+  sub: string;
+  name: string;
+  email: string;
+  roles: string[];
+  courseId: string;
+  courseTitle: string;
+  resourceLinkId: string;
+}
+
+interface LTIContextValue {
+  user: LTIUser | null;
+  sessionToken: string | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  isInstructor: boolean;
+  login: (token: string) => void;
+  logout: () => void;
+}
+```
+
+- `login(token)` — decodes JWT payload (base64), extracts user claims, saves to sessionStorage
+- `logout()` — clears state and sessionStorage, redirects to `/auth/error`
+- On mount — checks sessionStorage for existing token (survives F5)
+
+## Implementation Order
+
+| Step | Action | Files |
+|------|--------|-------|
+| 1 | Create LTIContext | `contexts/LTIContext.tsx` |
+| 2 | Update root layout with provider | `app/layout.tsx` |
+| 3 | Create RequireAuth | `components/RequireAuth.tsx` |
+| 4 | Create RoleBasedContent | `components/RoleBasedContent.tsx` |
+| 5 | Create LTI launch handler | `app/lti/launch/page.tsx` |
+| 6 | Create auth error page | `app/auth/error/page.tsx` |
+| 7 | Update teacher layout | `app/teacher/layout.tsx` |
+| 8 | Update teacher page | `app/teacher/page.tsx` |
+| 9 | Create student layout + page | `app/student/layout.tsx`, `app/student/page.tsx` |
+| 10 | Add CSS | `app/globals.css` |
+| 11 | Add Authorization header to API calls | `createAudio/page.tsx`, `audioRecords/page.tsx` |
+
+---
+
+# LTI Role Bug Fix
+
+## Problem
+
+`contexts/LTIContext.tsx:82` checks if the user is an instructor using strict equality:
+
+```tsx
+(r) => r.toLowerCase() === "instructor" || r.toLowerCase() === "administrator"
+```
+
+Moodle sends LTI roles as full URIs, e.g.:
+```
+http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor
+```
+
+`"http://purl.imsglobal.org/vocab/lis/v2/membership#instructor" !== "instructor"` → always `false`. The `isInstructor` flag is never set, so all users (including admins and teachers) are redirected to `/student`.
+
+## Fix
+
+```tsx
+(r) => r.toLowerCase().includes("instructor") || r.toLowerCase().includes("administrator")
+```
+
+## Files changed
+
+| File | Line | Change |
+|---|---|---|
+| `contexts/LTIContext.tsx` | 82 | `===` → `.includes()` |

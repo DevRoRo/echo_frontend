@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
+import { useLTIContext } from "@/contexts/LTIContext";
 
 interface AudioRecord {
     id: number;
+    name: string;
     file_path: string;
     transcription: string;
     conversation_context: string | null;
@@ -12,6 +14,7 @@ interface AudioRecord {
 }
 
 export default function AudioRecordsPage() {
+    const { sessionToken } = useLTIContext();
     const [transcriptionFilter, setTranscriptionFilter] = useState("");
     const [contextFilter, setContextFilter] = useState("");
     const [voiceFilter, setVoiceFilter] = useState("");
@@ -21,15 +24,21 @@ export default function AudioRecordsPage() {
     const [error, setError] = useState<string | null>(null);
     const [hasSearched, setHasSearched] = useState(false);
 
+    const [expandedId, setExpandedId] = useState<number | null>(null);
+    const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
+
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         setError(null);
         setHasSearched(true);
+        setExpandedId(null);
+        setDeleteError(null);
 
         try {
-            const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
             const params = new URLSearchParams();
             if (transcriptionFilter.trim()) params.set("transcription", transcriptionFilter.trim());
             if (contextFilter.trim()) params.set("conversation_context", contextFilter.trim());
@@ -38,7 +47,10 @@ export default function AudioRecordsPage() {
             const queryString = params.toString();
             const url = `${baseUrl}/audio-records/${queryString ? `?${queryString}` : ""}`;
 
-            const response = await fetch(url);
+            const headers: Record<string, string> = {};
+            if (sessionToken) headers["Authorization"] = `Bearer ${sessionToken}`;
+
+            const response = await fetch(url, { headers });
 
             if (!response.ok) {
                 const errorBody = await response.json().catch(() => null);
@@ -52,6 +64,41 @@ export default function AudioRecordsPage() {
             setError(err instanceof Error ? err.message : "Erro desconhecido");
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const toggleExpand = (id: number) => {
+        setExpandedId(expandedId === id ? null : id);
+        setDeleteError(null);
+    };
+
+    const handleDelete = async (id: number) => {
+        if (!window.confirm("Tem certeza que deseja excluir este áudio?")) return;
+
+        setDeletingId(id);
+        setDeleteError(null);
+
+        try {
+            const headers: Record<string, string> = {};
+            if (sessionToken) headers["Authorization"] = `Bearer ${sessionToken}`;
+
+            const response = await fetch(`${baseUrl}/audio-records/${id}`, {
+                method: "DELETE",
+                headers,
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.json().catch(() => null);
+                const detail = errorBody?.detail || await response.text().catch(() => "");
+                throw new Error(detail || "Falha ao excluir o registro.");
+            }
+
+            setRecords((prev) => prev.filter((r) => r.id !== id));
+            if (expandedId === id) setExpandedId(null);
+        } catch (err: unknown) {
+            setDeleteError(err instanceof Error ? err.message : "Erro desconhecido");
+        } finally {
+            setDeletingId(null);
         }
     };
 
@@ -153,8 +200,7 @@ export default function AudioRecordsPage() {
                 <table className="audio-records__table">
                     <thead>
                         <tr>
-                            <th className="audio-records__table-header">ID</th>
-                            <th className="audio-records__table-header">Arquivo</th>
+                            <th className="audio-records__table-header">Nome</th>
                             <th className="audio-records__table-header">Transcrição</th>
                             <th className="audio-records__table-header">Contexto</th>
                             <th className="audio-records__table-header">Voz</th>
@@ -163,28 +209,99 @@ export default function AudioRecordsPage() {
                     </thead>
                     <tbody>
                         {records.map((record) => (
-                            <tr key={record.id} className="audio-records__table-row">
-                                <td className="audio-records__table-cell audio-records__table-cell--id">
-                                    {record.id}
-                                </td>
-                                <td className="audio-records__table-cell">
-                                    <span title={record.file_path}>
-                                        {truncate(record.file_path, 40)}
-                                    </span>
-                                </td>
-                                <td className="audio-records__table-cell">
-                                    {truncate(record.transcription, 60)}
-                                </td>
-                                <td className="audio-records__table-cell audio-records__table-cell--muted">
-                                    {truncate(record.conversation_context, 60)}
-                                </td>
-                                <td className="audio-records__table-cell">
-                                    {record.voice_name}
-                                </td>
-                                <td className="audio-records__table-cell audio-records__table-cell--muted">
-                                    {formatDate(record.created_at)}
-                                </td>
-                            </tr>
+                            <React.Fragment key={record.id}>
+                                <tr
+                                    className={`audio-records__table-row audio-records__table-row--clickable${
+                                        expandedId === record.id
+                                            ? " audio-records__table-row--expanded"
+                                            : ""
+                                    }`}
+                                    onClick={() => toggleExpand(record.id)}
+                                >
+                                    <td className="audio-records__table-cell">
+                                        {truncate(record.name, 40)}
+                                    </td>
+                                    <td className="audio-records__table-cell">
+                                        {truncate(record.transcription, 60)}
+                                    </td>
+                                    <td className="audio-records__table-cell audio-records__table-cell--muted">
+                                        {truncate(record.conversation_context, 60)}
+                                    </td>
+                                    <td className="audio-records__table-cell">
+                                        {record.voice_name}
+                                    </td>
+                                    <td className="audio-records__table-cell audio-records__table-cell--muted">
+                                        {formatDate(record.created_at)}
+                                    </td>
+                                </tr>
+
+                                {expandedId === record.id && (
+                                    <tr className="audio-records__expand-row">
+                                        <td
+                                            className="audio-records__expand-cell"
+                                            colSpan={5}
+                                        >
+                                            <div className="audio-records__detail-panel">
+                                                <div className="audio-records__detail-field">
+                                                    <span className="audio-records__detail-label">Nome:</span>
+                                                    <span className="audio-records__detail-value">{record.name}</span>
+                                                </div>
+
+                                                <div className="audio-records__detail-field">
+                                                    <span className="audio-records__detail-label">Transcrição:</span>
+                                                    <span className="audio-records__detail-value">{record.transcription}</span>
+                                                </div>
+
+                                                <div className="audio-records__detail-field">
+                                                    <span className="audio-records__detail-label">Contexto:</span>
+                                                    <span className="audio-records__detail-value">
+                                                        {record.conversation_context || "—"}
+                                                    </span>
+                                                </div>
+
+                                                <div className="audio-records__detail-field">
+                                                    <span className="audio-records__detail-label">Arquivo:</span>
+                                                    <span className="audio-records__detail-value">{record.file_path}</span>
+                                                </div>
+
+                                                <div className="audio-records__detail-field">
+                                                    <span className="audio-records__detail-label">Voz:</span>
+                                                    <span className="audio-records__detail-value">{record.voice_name}</span>
+                                                </div>
+
+                                                <div className="audio-records__detail-field">
+                                                    <span className="audio-records__detail-label">Criado em:</span>
+                                                    <span className="audio-records__detail-value">{formatDate(record.created_at)}</span>
+                                                </div>
+
+                                                <div className="audio-records__detail-actions">
+                                                    <audio
+                                                        controls
+                                                        className="audio-records__audio-player"
+                                                        src={`${baseUrl}/${record.file_path}`}
+                                                    >
+                                                        Seu navegador não suporta o elemento de áudio.
+                                                    </audio>
+
+                                                    <button
+                                                        className="audio-records__btn-delete"
+                                                        onClick={() => handleDelete(record.id)}
+                                                        disabled={deletingId === record.id}
+                                                    >
+                                                        {deletingId === record.id ? "Excluindo..." : "Excluir Áudio"}
+                                                    </button>
+                                                </div>
+
+                                                {deleteError && (
+                                                    <div className="error-box" style={{ marginTop: "var(--spacing-3)" }}>
+                                                        {deleteError}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                            </React.Fragment>
                         ))}
                     </tbody>
                 </table>
